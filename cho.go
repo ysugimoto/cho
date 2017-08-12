@@ -1,8 +1,9 @@
-package main
+package cho
 
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -100,7 +101,7 @@ func truncateAnsi(line string, w int, _ string) string {
 	return string(out)
 }
 
-func main() {
+func Run(lines []string, ret chan string, terminate chan struct{}) {
 	flag.Parse()
 
 	fillstart := "\x1b[0K"
@@ -117,23 +118,13 @@ func main() {
 		truncate = truncateAnsi
 	}
 
-	b, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	if len(b) == 0 {
-		fmt.Fprintln(os.Stderr, "no buffer to work with was available")
-		os.Exit(1)
-	}
-	lines := strings.Split(strings.Replace(strings.TrimSpace(string(b)), "\r", "", -1), "\n")
 	result := ""
 	var qlines []string
 
 	tty, err := tty.Open()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		terminate <- struct{}{}
 	}
 	out := colorable.NewColorable(tty.Output())
 
@@ -143,7 +134,7 @@ func main() {
 		<-sc
 		out.Write([]byte("\x1b[?25h\x1b[0J"))
 		tty.Close()
-		os.Exit(1)
+		terminate <- struct{}{}
 	}()
 
 	if !*query {
@@ -158,9 +149,9 @@ func main() {
 			panic(e)
 		}
 		if result != "" {
-			fmt.Println(result)
+			ret <- result
 		} else {
-			os.Exit(1)
+			terminate <- struct{}{}
 		}
 	}()
 
