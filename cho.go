@@ -3,8 +3,6 @@ package cho
 import (
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"runtime"
