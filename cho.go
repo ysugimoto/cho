@@ -151,6 +151,8 @@ func Run(lines []string, ret chan string, terminate chan struct{}) {
 		} else {
 			terminate <- struct{}{}
 		}
+		// Ensure stop listening signal handler
+		signal.Stop(sc)
 	}()
 
 	var rs []rune
